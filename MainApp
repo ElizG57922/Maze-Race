@@ -1,0 +1,202 @@
+package mazerace;
+
+import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.Dimension;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
+import java.awt.GridLayout;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.KeyEvent;
+import java.awt.event.KeyListener;
+import java.awt.image.BufferedImage;
+import java.io.File;
+import java.io.IOException;
+import javax.imageio.ImageIO;
+import javax.swing.JButton;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.JTextField;
+import javax.swing.Timer;
+
+
+// -- inherit from JFrame so that we can add custom functionality
+public class MainApp extends JFrame {
+	private GraphicPanel gp;
+	private ControlPanel cp;
+	private Gameboard gb;
+
+	GraphicPanel getGraphicPanel()
+	{
+		return gp;
+	}
+	
+	public MainApp(int height, int width) {
+		setTitle("MazeRace");
+		setSize(width, height);
+		setLocationRelativeTo(null);	
+		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		setLayout(new BorderLayout(5, 5));
+        
+		gb = new Gameboard();
+		
+		gp = new GraphicPanel();
+		this.add(gp, BorderLayout.CENTER);
+
+		cp = new ControlPanel();
+		this.add(cp, BorderLayout.EAST);
+
+		this.setVisible(true);
+	}
+    
+	// -- Inner class for control panel, inherits from JPanel
+	public class GraphicPanel extends JPanel {
+		private Timer animationTimer = null;	
+		private Graphics2D g2d;
+		private MyKeyboardListener kl;        
+	
+        public Timer getAnimationTimer() {
+			return animationTimer;
+		}
+
+		public GraphicPanel() {
+			super();
+			setLayout(new GridLayout(15, 5));
+   			this.setBackground(Color.gray);
+            
+	    	kl = new MyKeyboardListener();//request focus here
+			this.add(kl);
+			kl.setFocusable(true);
+			kl.requestFocus();
+			   
+			//    First parameter is the delay in mSec, second is the ActionListener
+			animationTimer = new Timer(500, 
+					new ActionListener() {
+						public void actionPerformed(ActionEvent arg0) {
+							gb.checkIfFinished();
+							gp.repaint();
+							cp.setTextField("" + gb.getLevelNumber());
+						
+					}
+				}
+				);
+		}
+
+		public Dimension getPreferredSize() {
+			return new Dimension(50, 50);
+		}
+		
+		public void paint(Graphics g) {
+			super.paintComponent(g);
+            
+			g2d = (Graphics2D)g;
+			int h = this.getHeight();
+			int w = this.getWidth();
+			int r = gb.getRows();
+			int c = gb.getCols();
+			
+			gb.drawBlocks(g2d, w, h);
+			gb.getPlayer().draw(g2d, w, h, r , c);
+
+			
+		}
+		public MyKeyboardListener getKL() {
+			return kl;
+		}
+		
+		public class MyKeyboardListener extends JPanel{
+			public MyKeyboardListener() {
+				addKeyListener(new KeyListener() {
+					public void keyPressed(KeyEvent e) {
+						switch (e.getKeyCode()) {
+						case KeyEvent.VK_RIGHT:
+							gb.getPlayer().moveRight();
+							break;
+						case KeyEvent.VK_LEFT:
+							gb.getPlayer().moveLeft();
+							break;
+						case KeyEvent.VK_UP:
+							gb.getPlayer().moveUp();
+							break;
+						case KeyEvent.VK_DOWN:
+							gb.getPlayer().moveDown();
+							break;
+						
+							
+						}
+					}
+
+					@Override
+					public void keyTyped(KeyEvent e) {
+					}
+
+					@Override
+					public void keyReleased(KeyEvent e) {
+					}
+				});
+			}
+		}
+	}
+	
+	// -- Inner class for control panel, also inherits from JPanel
+	public class ControlPanel extends JPanel {
+  
+		private JTextField textfield;
+		
+		public ControlPanel() {
+			setLayout(new GridLayout(4, 1, 4, 4));
+	
+			
+			// JButtons
+			JButton startButton = new JButton("Go");
+			startButton.addActionListener(
+					new ActionListener() {
+						public void actionPerformed(ActionEvent arg0) {
+							gp.getAnimationTimer().start();
+							gp.getKL().requestFocus();
+						}
+					}
+				);
+			
+			JButton pauseButton = new JButton("Pause");
+			pauseButton.addActionListener(
+					new ActionListener() {
+						public void actionPerformed(ActionEvent arg0) {
+							gp.getAnimationTimer().stop();
+							gp.getKL().requestFocus();
+						}
+					}
+				);
+			
+
+			textfield = new JTextField("0");
+			textfield.setEditable(false);
+			JLabel time = new JLabel("Level:");
+			
+			// add all controls
+			add(startButton);
+			add(pauseButton);
+			add(time);
+			add(textfield);
+		}
+		public String getTextField() {
+			return textfield.getText();
+		}
+		
+		public void setTextField(String t) {
+			textfield.setText("" + t);
+		}
+	
+		
+		public Dimension getPreferredSize() {
+			return new Dimension(100, 500);
+		}
+	}
+	
+	public static void main(String[] args) {
+		// instantiate an anonymous object
+		new MainApp(600, 400);
+	}
+}
